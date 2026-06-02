@@ -508,6 +508,42 @@ function renderChart(data){
             bottom:70
         },
 
+        dataZoom:[
+
+            {
+                type:"slider",
+
+                show:true,
+
+                xAxisIndex:0,
+
+                height:28,
+
+                bottom:20,
+
+                borderColor:"#D9DFD2",
+
+                backgroundColor:"#F3F5EF",
+
+                fillerColor:"rgba(36,87,66,0.25)",
+
+                handleStyle:{
+                    color:"#245742"
+                },
+
+                textStyle:{
+                    color:"#687A67"
+                }
+            },
+
+            {
+                type:"inside",
+
+                xAxisIndex:0
+            }
+
+        ],
+
         xAxis:{
 
             type:"time",
@@ -704,9 +740,9 @@ function exportPNG(){
         tooltip:{},
 
         grid:{
-            left:120,
-            right:80,
-            top:80,
+            left:70,
+            right:40,
+            top:90,
             bottom:120
         },
 
