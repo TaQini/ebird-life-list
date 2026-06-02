@@ -9,6 +9,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 
@@ -216,6 +217,96 @@ input[type=file]{
     cursor:not-allowed;
 }
 
+#helpBtn{
+
+    background:#F3F5EF;
+
+    color:var(--forest);
+
+    border:1px solid #D9DFD2;
+
+    border-radius:12px;
+
+    padding:12px 18px;
+
+    cursor:pointer;
+
+    font-size:14px;
+
+    font-weight:600;
+}
+
+.modal{
+
+    display:none;
+
+    position:fixed;
+
+    left:0;
+    top:0;
+
+    width:100%;
+    height:100%;
+
+    background:rgba(0,0,0,.45);
+
+    z-index:9999;
+
+    align-items:center;
+
+    justify-content:center;
+}
+
+.modal-content{
+
+    background:white;
+
+    width:min(700px,90vw);
+
+    border-radius:20px;
+
+    padding:30px;
+
+    box-shadow:
+        0 20px 60px rgba(0,0,0,.2);
+
+    position:relative;
+}
+
+.modal-content h2{
+
+    margin-top:0;
+
+    color:var(--forest);
+}
+
+.modal-content ol{
+
+    line-height:1.9;
+}
+
+.modal-content a{
+
+    color:#2F7AE5;
+
+    word-break:break-all;
+}
+
+.modal-close{
+
+    position:absolute;
+
+    right:20px;
+
+    top:15px;
+
+    font-size:28px;
+
+    cursor:pointer;
+
+    color:#999;
+}
+
 </style>
 </head>
 
@@ -244,12 +335,16 @@ Birding Life List
 <input
     type="file"
     id="csvFile"
-    accept=".csv"
+    accept=".csv,.xlsx,.xls"
 />
 
 <span id="fileName">
-请选择 eBird 导出的 CSV 文件
+请选择 eBird/中国观鸟记录中心 导出的 CSV/XLSX 文件
 </span>
+
+<button id="helpBtn">
+    查看说明
+</button>
 
 <button id="exportBtn" disabled>
     导出 PNG
@@ -258,10 +353,96 @@ Birding Life List
 </div>
 
 <div id="chartPlaceholder">
-上传 CSV 后生成 Life List 成长曲线
+上传 CSV/XLSX 后生成 Life List 成长曲线
 </div>
 
 <div id="chart"></div>
+
+<div id="helpModal" class="modal">
+
+    <div class="modal-content">
+
+        <span id="closeHelp" class="modal-close">
+            ×
+        </span>
+
+        <h2>
+            使用说明
+        </h2>
+
+        <h3>
+            eBird 数据导入方法
+        </h3>
+
+        <ol>
+
+            <li>
+                登录 eBird 账号
+            </li>
+
+            <li>
+                打开以下页面：
+
+                <a
+                    href="https://ebird.org/lifelist?time=life&r=CN"
+                    target="_blank"
+                >
+                    https://ebird.org/lifelist?time=life&r=CN
+                </a>
+
+            </li>
+
+            <li>
+                下载 Life List CSV 文件
+            </li>
+
+            <li>
+                将下载的 CSV 文件导入本页面
+            </li>
+
+        </ol>
+
+        <hr>
+
+        <h3>
+            中国观鸟记录中心数据导入方法
+        </h3>
+
+        <ol>
+
+            <li>
+                登录中国观鸟记录中心
+            </li>
+
+
+            <li>
+                打开以下页面：
+
+                <a
+                    href="https://www.birdreport.cn/member/index.html"
+                    target="_blank"
+                >
+                    https://www.birdreport.cn/member/index.html
+                </a>
+
+            </li>
+
+            <li>
+                依次点击「历年数据统计」-> 总鸟种数
+            </li>
+
+            <li>
+                导出「鸟种数据」Excel 文件
+            </li>
+
+            <li>
+                将下载的 XLSX 文件导入本页面
+            </li>
+
+        </ol>
+
+
+    </div>
 
 </div>
 
@@ -275,6 +456,45 @@ document
 .addEventListener(
     "change",
     handleFile
+);
+
+document
+.getElementById("helpBtn")
+.addEventListener(
+    "click",
+    ()=>{
+        document
+            .getElementById("helpModal")
+            .style.display = "flex";
+    }
+);
+
+document
+.getElementById("closeHelp")
+.addEventListener(
+    "click",
+    ()=>{
+        document
+            .getElementById("helpModal")
+            .style.display = "none";
+    }
+);
+
+document
+.getElementById("helpModal")
+.addEventListener(
+    "click",
+    (e)=>{
+
+        if(
+            e.target.id === "helpModal"
+        ){
+            document
+                .getElementById("helpModal")
+                .style.display = "none";
+        }
+
+    }
 );
 
 document
@@ -296,6 +516,33 @@ function handleFile(event){
         .innerText =
         file.name;
 
+    const ext =
+        file.name
+        .split(".")
+        .pop()
+        .toLowerCase();
+
+    if(ext === "csv"){
+
+        parseEbirdCSV(file);
+
+    }else if(
+        ext === "xlsx" ||
+        ext === "xls"
+    ){
+
+        parseBirdReportExcel(file);
+
+    }else{
+
+        alert(
+            "仅支持 CSV / XLSX / XLS"
+        );
+    }
+}
+
+function parseEbirdCSV(file){
+
     Papa.parse(file,{
 
         header:true,
@@ -304,7 +551,7 @@ function handleFile(event){
 
         complete:(result)=>{
 
-            processData(
+            processEbirdData(
                 result.data
             );
 
@@ -321,7 +568,7 @@ function handleFile(event){
 
 }
 
-function processData(rows){
+function processEbirdData(rows){
 
     rows = rows.filter(
         row => Number(row.Countable) !== 0
@@ -397,6 +644,111 @@ function processData(rows){
     renderChart(chartData);
 }
 
+function parseBirdReportExcel(file){
+
+    const reader =
+        new FileReader();
+
+    reader.onload =
+        function(e){
+
+            const workbook =
+                XLSX.read(
+                    e.target.result,
+                    {
+                        type:"array"
+                    }
+                );
+
+            const sheet =
+                workbook.Sheets[
+                    workbook.SheetNames[0]
+                ];
+
+            const rows =
+                XLSX.utils
+                .sheet_to_json(sheet);
+
+            processBirdReportData(
+                rows
+            );
+        };
+
+    reader.readAsArrayBuffer(
+        file
+    );
+}
+
+function processBirdReportData(rows){
+
+    const speciesRecords =
+        rows
+        .filter(
+            row =>
+                row["中文名"] &&
+                row["记录时间"]
+        )
+        .map(row=>({
+
+            species:
+                row["中文名"],
+
+            date:
+                parseDate(
+                    row["记录时间"]
+                )
+
+        }))
+        .filter(
+            row => row.date
+        )
+        .sort(
+            (a,b)=>
+                a.date-b.date
+        );
+
+    let cumulative = 0;
+
+    const dateMap = {};
+
+    speciesRecords.forEach(item=>{
+
+        cumulative++;
+
+        const date =
+            formatDate(
+                item.date
+            );
+
+        if(!dateMap[date]){
+
+            dateMap[date] = {
+
+                date,
+
+                count:cumulative,
+
+                species:[]
+            };
+
+        }else{
+
+            dateMap[date].count =
+                cumulative;
+        }
+
+        dateMap[date]
+            .species
+            .push(
+                item.species
+            );
+
+    });
+
+    renderChart(
+        Object.values(dateMap)
+    );
+}
 function renderChart(data){
 
     currentChartData = data;
